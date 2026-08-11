@@ -21,10 +21,10 @@ RED = (255, 0, 0)            # 0xFF0000
 # fuentes (mismos tamaños que el código / BMFont)
 f_time = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 156)    # hora grande
 f_num = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 78)      # nº día del mes
-f_mon = ImageFont.truetype(f"{SRC}/RobotoMono-Medium.ttf", 54)    # mes (3 letras)
+f_mon = ImageFont.truetype(f"{SRC}/RobotoMono-Medium.ttf", 70)    # mes (3 letras)
 f_init = ImageFont.truetype(f"{SRC}/RobotoMono-Medium.ttf", 32)   # iniciales
 
-Y_STRIP, Y_TIME, Y_DATE = 0.235, 0.50, 0.775
+Y_STRIP, Y_TIME, Y_DATE = 0.235, 0.50, 0.815
 
 
 def draw_big_time(d, cx, cy, color):
@@ -60,11 +60,7 @@ def draw_day_window(d, cx, cy, day, mon):
     gap = 14
     groupW = numW + gap + monW
     x0 = cx - groupW / 2
-    padX = 22
-    _, t, _, b = d.textbbox((cx, cy), num, font=f_num, anchor="lm")
-    boxH = (b - t) + 8
-    d.rounded_rectangle([x0 - padX, cy - boxH / 2, x0 + groupW + padX, cy + boxH / 2],
-                        radius=14, outline=ACCENT, width=3)
+    # Sin recuadro: solo número (blanco) + mes (acento).
     d.text((x0, cy), num, font=f_num, fill=WHITE, anchor="lm")
     d.text((x0 + numW + gap, cy), mon, font=f_mon, fill=ACCENT, anchor="lm")
 

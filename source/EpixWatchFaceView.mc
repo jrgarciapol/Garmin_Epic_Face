@@ -46,7 +46,7 @@ class EpixWatchFaceView extends Ui.WatchFace {
     // Posiciones verticales como fracción de la altura de pantalla.
     private const Y_STRIP = 0.235; // tira semanal (arriba)
     private const Y_TIME  = 0.500; // hora (centro)
-    private const Y_DATE  = 0.775; // ventana de fecha (abajo)
+    private const Y_DATE  = 0.815; // fecha (abajo, separada de la hora)
 
     function initialize() {
         WatchFace.initialize();
@@ -180,9 +180,8 @@ class EpixWatchFaceView extends Ui.WatchFace {
         }
     }
 
-    //! Ventana de fecha: número grande del día del mes (blanco) y, a su
-    //! derecha, el mes en 3 letras (color de acento), dentro de un recuadro
-    //! redondeado. Todo grande = legible sin gafas.
+    //! Fecha: número grande del día del mes (blanco) y, a su derecha, el mes
+    //! en 3 letras (color de acento). Sin recuadro. Todo grande = legible.
     private function drawDayWindow(dc, cx, cy, day, month) {
         var num = day.format("%d");
         var mon = monthName(month);
@@ -192,15 +191,6 @@ class EpixWatchFaceView extends Ui.WatchFace {
         var gap = 14;
         var groupW = numW + gap + monW;
         var x0 = cx - groupW / 2;
-
-        // Recuadro alrededor del conjunto.
-        var padX = 22;
-        var boxH = dc.getTextDimensions(num, mNumFont)[1] + 8;
-        dc.setColor(mAccentColor, Gfx.COLOR_TRANSPARENT);
-        dc.setPenWidth(3);
-        dc.drawRoundedRectangle(x0 - padX, cy - boxH / 2,
-                                groupW + padX * 2, boxH, 14);
-        dc.setPenWidth(1);
 
         // Número (blanco) alineado a la izquierda del grupo, centrado vertical.
         dc.setColor(COLOR_TIME, Gfx.COLOR_TRANSPARENT);

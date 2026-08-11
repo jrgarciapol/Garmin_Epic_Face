@@ -20,7 +20,7 @@ DATE_CHARS = LETTERS + DIGITS + " "
 JOBS = [
     ("TimeBig", "RobotoMono-Bold.ttf",   156, TIME_CHARS),   # hora (interactivo + AOD)
     ("NumBig",  "RobotoMono-Bold.ttf",    78, DIGITS),       # número del día del mes
-    ("MonBig",  "RobotoMono-Medium.ttf",  54, LETTERS),      # mes (3 letras) a su derecha
+    ("MonBig",  "RobotoMono-Medium.ttf",  70, LETTERS),      # mes (3 letras) a su derecha
     ("DateMed", "RobotoMono-Medium.ttf",  32, DATE_CHARS),   # iniciales de la tira semanal
 ]
 
