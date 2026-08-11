@@ -4,5 +4,4 @@
     <font id="TimeBig" filename="TimeBig.fnt" antialias="true"/>
     <font id="NumBig"  filename="NumBig.fnt"  antialias="true"/>
     <font id="MonBig"  filename="MonBig.fnt"  antialias="true"/>
-    <font id="DateMed" filename="DateMed.fnt" antialias="true"/>
 </fonts>

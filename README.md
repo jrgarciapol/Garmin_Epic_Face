@@ -15,13 +15,14 @@ La esfera tiene **dos presentaciones** que cambian solas:
 ### Modo INTERACTIVO (cuando miras el reloj)
 
 - **Fondo negro** con máximo contraste.
-- **Hora `HH:MM`** en **Roboto Mono Bold 156**, muy grande y blanca (mismo
-  tamaño que las esferas de fábrica).
-- **Día de la semana gráfico**: una **tira de 7 puntos** (`L M X J V S D`,
-  lunes primero) con el día de hoy resaltado en un círculo de acento. Se lee
-  de un vistazo por posición y color, sin depender de números pequeños.
-- **Día del mes** en un **número grande dentro de un recuadro** ("ventana de
-  fecha"), legible sin gafas.
+- **Día de la semana** en 3 letras (`LUN`), arriba sobre la hora, en color de
+  acento. Al despertar la pantalla se **revela letra a letra** (`L → LU →
+  LUN`, una por segundo — es el máximo refresco que permite una esfera Garmin).
+- **Hora** en **Roboto Mono Bold 156**, muy grande y blanca (mismo tamaño que
+  las esferas de fábrica). **Sin cero delante** en horas de un dígito
+  (`1:00`, no `01:00`).
+- **Día del mes** (número grande blanco) **+ mes en 3 letras** (acento) a su
+  derecha, abajo. Todo grande, legible sin gafas.
 - **Sin segundos.**
 
 ### Modo ALWAYS-ON (reposo, pantalla siempre encendida)
