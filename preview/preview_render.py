@@ -13,29 +13,54 @@ OUT = os.path.join(_HERE, "preview.png")
 S = 454                      # pantalla
 ACCENT = (30, 155, 255)      # 0x1E9BFF
 WHITE = (255, 255, 255)
-GRAY = (170, 170, 170)       # 0xAAAAAA
+DIM = (102, 102, 102)        # 0x666666 (días no activos)
+GRAY = (170, 170, 170)
 GREEN = (0, 255, 0)          # 0x00FF00
 RED = (255, 0, 0)            # 0xFF0000
 
 # fuentes (mismos tamaños que el código / BMFont)
-f_time_bold = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 130)   # interactivo
-f_aod = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 156)         # AOD grande
-f_sec = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 56)
-f_date = ImageFont.truetype(f"{SRC}/RobotoMono-Medium.ttf", 32)
+f_time = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 156)    # hora grande
+f_num = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 56)      # nº día del mes
+f_init = ImageFont.truetype(f"{SRC}/RobotoMono-Medium.ttf", 32)   # iniciales
 
-Y_DATE, Y_TIME, Y_LINE, Y_SEC = 0.30, 0.50, 0.685, 0.79
+Y_STRIP, Y_TIME, Y_DATE = 0.235, 0.50, 0.775
 
 
-def draw_aod_time(d, cx, cy, color):
+def draw_big_time(d, cx, cy, color):
     """Dibuja HH : MM en tres bloques con ':' ceñido (como el código)."""
     hh, mm = "10", "24"
-    wB = f_aod.getlength(hh)
-    colonSlot = int(f_aod.getlength(":") * 0.5)
+    wB = f_time.getlength(hh)
+    colonSlot = int(f_time.getlength(":") * 0.5)
     totalW = wB * 2 + colonSlot
     x0 = cx - totalW / 2
-    d.text((x0, cy), hh, font=f_aod, fill=color, anchor="lm")
-    d.text((x0 + wB + colonSlot / 2, cy), ":", font=f_aod, fill=color, anchor="mm")
-    d.text((x0 + wB + colonSlot, cy), mm, font=f_aod, fill=color, anchor="lm")
+    d.text((x0, cy), hh, font=f_time, fill=color, anchor="lm")
+    d.text((x0 + wB + colonSlot / 2, cy), ":", font=f_time, fill=color, anchor="mm")
+    d.text((x0 + wB + colonSlot, cy), mm, font=f_time, fill=color, anchor="lm")
+
+
+def draw_week_strip(d, cx, cy, today_idx):
+    initials = "LMXJVSD"
+    n, step, r = 7, 40, 17
+    startX = cx - (step * (n - 1)) // 2
+    for i in range(n):
+        x = startX + i * step
+        ch = initials[i]
+        if i == today_idx:
+            d.ellipse([x - r, cy - r, x + r, cy + r], fill=ACCENT)
+            d.text((x, cy), ch, font=f_init, fill=WHITE, anchor="mm")
+        else:
+            d.text((x, cy), ch, font=f_init, fill=DIM, anchor="mm")
+
+
+def draw_day_window(d, cx, cy, day):
+    num = str(day)
+    l, t, rr, b = d.textbbox((cx, cy), num, font=f_num, anchor="mm")
+    boxW = (rr - l) + 40
+    boxH = (b - t) + 8
+    x0, y0 = cx - boxW // 2, cy - boxH // 2
+    d.rounded_rectangle([x0, y0, x0 + boxW, y0 + boxH], radius=12,
+                        outline=ACCENT, width=3)
+    d.text((cx, cy), num, font=f_num, fill=WHITE, anchor="mm")
 
 
 def face(mode, aod_color=None):
@@ -44,15 +69,12 @@ def face(mode, aod_color=None):
     cx = S // 2
 
     if mode == "interactive":
-        d.text((cx, int(S * Y_DATE)), "SAB 09 AGO", font=f_date, fill=GRAY, anchor="mm")
-        d.text((cx, int(S * Y_TIME)), "10:24", font=f_time_bold, fill=WHITE, anchor="mm")
-        half = int(S * 0.16)
-        ly = int(S * Y_LINE)
-        d.rectangle([cx - half, ly, cx + half, ly + 3], fill=ACCENT)
-        d.text((cx, int(S * Y_SEC)), "37", font=f_sec, fill=ACCENT, anchor="mm")
+        draw_week_strip(d, cx, int(S * Y_STRIP), 5)   # sábado resaltado
+        draw_big_time(d, cx, int(S * Y_TIME), WHITE)
+        draw_day_window(d, cx, int(S * Y_DATE), 9)
     else:  # always-on: solo la hora, grande, con desplazamiento de ejemplo
         ox, oy = 8, -8
-        draw_aod_time(d, cx + ox, S // 2 + oy, aod_color)
+        draw_big_time(d, cx + ox, S // 2 + oy, aod_color)
 
     mask = Image.new("L", (S, S), 0)
     ImageDraw.Draw(mask).ellipse([0, 0, S - 1, S - 1], fill=255)
@@ -78,7 +100,7 @@ def watch(mode, aod_color=None):
 
 # Composición: tres relojes
 items = [
-    ("interactive", None, "INTERACTIVO", "Roboto Mono Bold - brillo max."),
+    ("interactive", None, "INTERACTIVO", "hora grande + tira semanal + fecha"),
     ("aod", GREEN, "ALWAYS-ON - VERDE", "solo hora, Bold 156 (~9%)"),
     ("aod", RED, "ALWAYS-ON - ROJO", "solo hora, Bold 156 (~9%)"),
 ]

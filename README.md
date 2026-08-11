@@ -15,9 +15,14 @@ La esfera tiene **dos presentaciones** que cambian solas:
 ### Modo INTERACTIVO (cuando miras el reloj)
 
 - **Fondo negro** con máximo contraste.
-- **Hora `HH:MM`** en **Roboto Mono Bold**, muy grande y blanca.
-- **Día + fecha** arriba (`LUN 09 AGO`) en gris.
-- **Segundos** en color de **acento** + fina línea de acento.
+- **Hora `HH:MM`** en **Roboto Mono Bold 156**, muy grande y blanca (mismo
+  tamaño que las esferas de fábrica).
+- **Día de la semana gráfico**: una **tira de 7 puntos** (`L M X J V S D`,
+  lunes primero) con el día de hoy resaltado en un círculo de acento. Se lee
+  de un vistazo por posición y color, sin depender de números pequeños.
+- **Día del mes** en un **número grande dentro de un recuadro** ("ventana de
+  fecha"), legible sin gafas.
+- **Sin segundos.**
 
 ### Modo ALWAYS-ON (reposo, pantalla siempre encendida)
 

@@ -7,20 +7,20 @@ using Toybox.Time.Gregorian as Calendar;
 using Toybox.Application as App;
 
 //! Esfera digital para el Epix Pro 51 mm (454 x 454, AMOLED), pensada para
-//! MÁXIMA LEGIBILIDAD, con fuentes Roboto Mono (open source) y soporte real de
-//! Always-On Display (AOD) seguro contra burn-in.
+//! MÁXIMA LEGIBILIDAD, con fuentes Roboto Mono (open source).
 //!
 //! Dos presentaciones:
 //!
-//!   INTERACTIVA (mirando el reloj) — brillo máximo, contraste alto:
-//!     - Fecha (Roboto Mono Medium, gris claro)
-//!     - Hora HH:MM (Roboto Mono Bold, blanco, muy grande)
-//!     - Línea de acento + segundos (color de acento)
+//!   INTERACTIVA (mirando el reloj):
+//!     - Tira semanal: 7 puntos (L M X J V S D) con el día de hoy resaltado
+//!       en color de acento -> el día de la semana se lee "de un vistazo".
+//!     - Hora HH:MM enorme (Roboto Mono Bold 156), blanca.
+//!     - Día del mes: número grande dentro de un recuadro ("ventana de fecha").
+//!     - Sin segundos.
 //!
-//!   ALWAYS-ON (reposo, pantalla siempre encendida) — solo la hora, grande:
-//!     - Hora HH:MM (Roboto Mono Bold 156) en color vivo (verde/rojo/blanco)
-//!     - Sin fecha, segundos ni rellenos
-//!     - ~9,2% de píxeles encendidos (Garmin exige <10%)
+//!   ALWAYS-ON (reposo, pantalla siempre encendida):
+//!     - Solo la hora HH:MM (misma fuente grande) en color vivo (verde/rojo/
+//!       blanco). ~9,2% de píxeles encendidos (Garmin exige <10%).
 //!     - Desplazamiento de píxeles cada minuto para evitar quemado del AMOLED.
 class EpixWatchFaceView extends Ui.WatchFace {
 
@@ -29,25 +29,23 @@ class EpixWatchFaceView extends Ui.WatchFace {
 
     // Ajustes configurables por el usuario.
     private var mUse24Hour = true;
-    private var mAccentColor = 0x1E9BFF; // azul brillante (acento interactivo)
-    private var mAodColor = 0x00FF00;    // verde por defecto (hora en AOD)
+    private var mAccentColor = 0x1E9BFF; // azul (acento interactivo)
+    private var mAodColor = 0x00FF00;    // verde (hora en AOD)
 
     // Fuentes personalizadas (Roboto Mono).
-    private var mTimeFont;      // Bold 130 — hora interactiva
-    private var mAodFont;       // Bold 156 — hora AOD (grande)
-    private var mSecFont;       // Bold  — segundos
-    private var mDateFont;      // Medium — fecha
+    private var mTimeFont;   // Bold 156 — hora (interactivo + AOD)
+    private var mNumFont;    // Bold 56  — número del día del mes
+    private var mInitFont;   // Medium 32 — iniciales de la tira semanal
 
     // Colores.
-    private const COLOR_BG      = Gfx.COLOR_BLACK;
-    private const COLOR_TIME    = 0xFFFFFF; // blanco puro (interactivo)
-    private const COLOR_DATE    = 0xAAAAAA; // gris claro (interactivo)
+    private const COLOR_BG   = Gfx.COLOR_BLACK;
+    private const COLOR_TIME = 0xFFFFFF; // blanco puro
+    private const COLOR_DIM  = 0x666666; // gris de los días no activos
 
     // Posiciones verticales como fracción de la altura de pantalla.
-    private const Y_DATE = 0.30;
-    private const Y_TIME = 0.50;
-    private const Y_LINE = 0.685;
-    private const Y_SEC  = 0.79;
+    private const Y_STRIP = 0.235; // tira semanal (arriba)
+    private const Y_TIME  = 0.500; // hora (centro)
+    private const Y_DATE  = 0.775; // ventana de fecha (abajo)
 
     function initialize() {
         WatchFace.initialize();
@@ -55,11 +53,9 @@ class EpixWatchFaceView extends Ui.WatchFace {
 
     //! Carga las fuentes personalizadas.
     function onLayout(dc) {
-        mTimeFont = Ui.loadResource(Rez.Fonts.TimeBold);
-        mAodFont  = Ui.loadResource(Rez.Fonts.TimeAod);
-        mSecFont  = Ui.loadResource(Rez.Fonts.SecBold);
-        mDateFont = Ui.loadResource(Rez.Fonts.DateMed);
-
+        mTimeFont = Ui.loadResource(Rez.Fonts.TimeBig);
+        mNumFont  = Ui.loadResource(Rez.Fonts.NumBig);
+        mInitFont = Ui.loadResource(Rez.Fonts.DateMed);
         loadSettings();
     }
 
@@ -83,8 +79,6 @@ class EpixWatchFaceView extends Ui.WatchFace {
     }
 
     //! Redibujado principal.
-    //!   - En alto consumo: presentación interactiva completa.
-    //!   - En bajo consumo con AOD: presentación mínima y segura.
     function onUpdate(dc) {
         loadSettings();
 
@@ -100,37 +94,21 @@ class EpixWatchFaceView extends Ui.WatchFace {
         }
     }
 
-    //! ---- Presentación INTERACTIVA (brillo máximo) ----
+    //! ---- Presentación INTERACTIVA ----
     private function drawInteractive(dc, now) {
         var w = dc.getWidth();
         var h = dc.getHeight();
         var cx = w / 2;
 
-        // Fecha
-        dc.setColor(COLOR_DATE, Gfx.COLOR_TRANSPARENT);
-        dc.drawText(cx, (h * Y_DATE).toNumber(), mDateFont, dateLine(now),
-                    Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
+        drawWeekStrip(dc, cx, (h * Y_STRIP).toNumber(), now.day_of_week);
 
-        // Hora
-        dc.setColor(COLOR_TIME, Gfx.COLOR_TRANSPARENT);
-        dc.drawText(cx, (h * Y_TIME).toNumber(), mTimeFont,
-                    formatTime(now.hour, now.min),
-                    Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
+        drawBigTime(dc, cx, (h * Y_TIME).toNumber(),
+                    formatTime(now.hour, now.min), COLOR_TIME);
 
-        // Línea de acento
-        var lineHalf = (w * 0.16).toNumber();
-        dc.setColor(mAccentColor, Gfx.COLOR_TRANSPARENT);
-        dc.fillRectangle(cx - lineHalf, (h * Y_LINE).toNumber(), lineHalf * 2, 3);
-
-        // Segundos
-        drawSeconds(dc, now.sec);
+        drawDayWindow(dc, cx, (h * Y_DATE).toNumber(), now.day);
     }
 
-    //! ---- Presentación ALWAYS-ON (solo la hora, grande y legible) ----
-    //! Hora enorme (Roboto Mono Bold 156) en color AOD (verde/rojo/blanco).
-    //! ~9,2% de píxeles encendidos (bajo el límite del 10% de Garmin).
-    //! Se dibuja en tres bloques (HH · : · MM) con el ":" ceñido para poder
-    //! agrandar los dígitos sin salirse de la pantalla.
+    //! ---- Presentación ALWAYS-ON (solo la hora) ----
     private function drawAlwaysOn(dc, now) {
         var w = dc.getWidth();
         var h = dc.getHeight();
@@ -141,71 +119,83 @@ class EpixWatchFaceView extends Ui.WatchFace {
         var ox = ((now.min % 3) - 1) * shift;
         var oy = (((now.min / 3) % 3) - 1) * shift;
 
-        var timeStr = formatTime(now.hour, now.min);
+        drawBigTime(dc, w / 2 + ox, h / 2 + oy,
+                    formatTime(now.hour, now.min), mAodColor);
+    }
+
+    //! Dibuja HH:MM muy grande en tres bloques (HH · : · MM) con el ":" ceñido,
+    //! para que los dígitos sean lo más grandes posible sin salirse de la
+    //! pantalla redonda. Centrado en (cx, cy).
+    private function drawBigTime(dc, cx, cy, timeStr, color) {
         var colonIdx = timeStr.find(":");
         var hh = timeStr.substring(0, colonIdx);
         var mm = timeStr.substring(colonIdx + 1, timeStr.length());
 
-        // Anchos: bloque de dos dígitos y hueco ceñido para el ":".
-        var wBlock = dc.getTextDimensions(hh, mAodFont)[0];
-        var wColon = dc.getTextDimensions(":", mAodFont)[0];
+        var wBlock = dc.getTextDimensions(hh, mTimeFont)[0];
+        var wColon = dc.getTextDimensions(":", mTimeFont)[0];
         var colonSlot = (wColon / 2).toNumber();
         var totalW = wBlock * 2 + colonSlot;
+        var x0 = cx - totalW / 2;
 
-        var x0 = (w - totalW) / 2 + ox;
-        var cy = h / 2 + oy;
-
-        dc.setColor(mAodColor, Gfx.COLOR_TRANSPARENT);
-        // HH (alineado a la izquierda de su bloque)
-        dc.drawText(x0, cy, mAodFont, hh,
+        dc.setColor(color, Gfx.COLOR_TRANSPARENT);
+        dc.drawText(x0, cy, mTimeFont, hh,
                     Gfx.TEXT_JUSTIFY_LEFT | Gfx.TEXT_JUSTIFY_VCENTER);
-        // ":" centrado en su hueco ceñido
-        dc.drawText(x0 + wBlock + colonSlot / 2, cy, mAodFont, ":",
+        dc.drawText(x0 + wBlock + colonSlot / 2, cy, mTimeFont, ":",
                     Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
-        // MM
-        dc.drawText(x0 + wBlock + colonSlot, cy, mAodFont, mm,
+        dc.drawText(x0 + wBlock + colonSlot, cy, mTimeFont, mm,
                     Gfx.TEXT_JUSTIFY_LEFT | Gfx.TEXT_JUSTIFY_VCENTER);
-        // Sin fecha, segundos ni rellenos en AOD.
     }
 
-    //! Segundos en color de acento (solo con pantalla activa). Limpia su propia
-    //! zona (clip) para que onPartialUpdate no solape dígitos cada segundo.
-    private function drawSeconds(dc, sec) {
-        var w = dc.getWidth();
-        var h = dc.getHeight();
-        var cx = w / 2;
-        var secY = (h * Y_SEC).toNumber();
+    //! Tira semanal: 7 puntos con iniciales (L M X J V S D, lunes primero).
+    //! El día de hoy se resalta con un círculo de acento y letra blanca; el
+    //! resto van en gris. Así el día de la semana se lee por posición/color.
+    private function drawWeekStrip(dc, cx, cy, dow) {
+        var initials = "LMXJVSD";
+        // day_of_week de FORMAT_SHORT: 1=domingo .. 7=sábado.
+        // Convertimos a índice con lunes primero (0=lunes .. 6=domingo).
+        var todayIdx = (dow + 5) % 7;
 
-        var text = sec.format("%02d");
-        var dims = dc.getTextDimensions(text, mSecFont);
-        var boxW = dims[0] + 10;
-        var boxH = dims[1] + 6;
+        var n = 7;
+        var step = 40;              // separación entre centros
+        var r = 17;                 // radio del círculo resaltado
+        var startX = cx - (step * (n - 1)) / 2;
 
-        dc.setClip(cx - boxW / 2, secY - boxH / 2, boxW, boxH);
-        dc.setColor(COLOR_BG, COLOR_BG);
-        dc.clear();
+        for (var i = 0; i < n; i += 1) {
+            var x = startX + i * step;
+            var ch = initials.substring(i, i + 1);
+
+            if (i == todayIdx) {
+                dc.setColor(mAccentColor, Gfx.COLOR_TRANSPARENT);
+                dc.fillCircle(x, cy, r);
+                dc.setColor(COLOR_TIME, mAccentColor);
+                dc.drawText(x, cy, mInitFont, ch,
+                            Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
+            } else {
+                dc.setColor(COLOR_DIM, Gfx.COLOR_TRANSPARENT);
+                dc.drawText(x, cy, mInitFont, ch,
+                            Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
+            }
+        }
+    }
+
+    //! Ventana de fecha: número grande del día del mes dentro de un recuadro
+    //! redondeado con borde de acento. Grande = legible sin gafas.
+    private function drawDayWindow(dc, cx, cy, day) {
+        var num = day.format("%d");
+        var dims = dc.getTextDimensions(num, mNumFont);
+        var boxW = dims[0] + 40;
+        var boxH = dims[1] + 8;
+        var x = cx - boxW / 2;
+        var y = cy - boxH / 2;
 
         dc.setColor(mAccentColor, Gfx.COLOR_TRANSPARENT);
-        dc.drawText(cx, secY, mSecFont, text,
+        dc.setPenWidth(3);
+        dc.drawRoundedRectangle(x, y, boxW, boxH, 12);
+        dc.setPenWidth(1);
+
+        dc.setColor(COLOR_TIME, Gfx.COLOR_TRANSPARENT);
+        dc.drawText(cx, cy, mNumFont, num,
                     Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
-
-        dc.clearClip();
-    }
-
-    //! Refresco por segundo (solo en alto consumo): actualiza los segundos.
-    function onPartialUpdate(dc) {
-        if (!mIsAwake) {
-            return;
-        }
-        var now = Calendar.info(Time.now(), Time.FORMAT_SHORT);
-        drawSeconds(dc, now.sec);
-    }
-
-    //! Construye la línea de fecha: "LUN 09 AGO".
-    private function dateLine(now) {
-        return dayName(now.day_of_week) + " " +
-               now.day.format("%02d") + " " +
-               monthName(now.month);
     }
 
     //! Formatea la hora respetando 12/24 h del usuario y del sistema.
@@ -219,43 +209,6 @@ class EpixWatchFaceView extends Ui.WatchFace {
             }
         }
         return h.format("%02d") + ":" + min.format("%02d");
-    }
-
-    //! Nombre corto del día (day_of_week: 1 = domingo en FORMAT_SHORT).
-    private function dayName(dow) {
-        var id;
-        switch (dow) {
-            case 1:  id = Rez.Strings.Day_0; break;
-            case 2:  id = Rez.Strings.Day_1; break;
-            case 3:  id = Rez.Strings.Day_2; break;
-            case 4:  id = Rez.Strings.Day_3; break;
-            case 5:  id = Rez.Strings.Day_4; break;
-            case 6:  id = Rez.Strings.Day_5; break;
-            case 7:  id = Rez.Strings.Day_6; break;
-            default: id = Rez.Strings.Day_0; break;
-        }
-        return Ui.loadResource(id);
-    }
-
-    //! Nombre corto del mes (1 = enero).
-    private function monthName(month) {
-        var id;
-        switch (month) {
-            case 1:  id = Rez.Strings.Mon_1;  break;
-            case 2:  id = Rez.Strings.Mon_2;  break;
-            case 3:  id = Rez.Strings.Mon_3;  break;
-            case 4:  id = Rez.Strings.Mon_4;  break;
-            case 5:  id = Rez.Strings.Mon_5;  break;
-            case 6:  id = Rez.Strings.Mon_6;  break;
-            case 7:  id = Rez.Strings.Mon_7;  break;
-            case 8:  id = Rez.Strings.Mon_8;  break;
-            case 9:  id = Rez.Strings.Mon_9;  break;
-            case 10: id = Rez.Strings.Mon_10; break;
-            case 11: id = Rez.Strings.Mon_11; break;
-            case 12: id = Rez.Strings.Mon_12; break;
-            default: id = Rez.Strings.Mon_1;  break;
-        }
-        return Ui.loadResource(id);
     }
 
     //! Alto consumo: repintamos al instante para respuesta inmediata al gesto.

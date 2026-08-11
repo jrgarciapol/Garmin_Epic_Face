@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fonts>
     <!-- Fuentes Roboto Mono rasterizadas a BMFont (.fnt + .png). -->
-    <font id="TimeBold" filename="TimeBold.fnt" antialias="true"/>
-    <font id="TimeAod"  filename="TimeAod.fnt"  antialias="true"/>
-    <font id="SecBold"  filename="SecBold.fnt"  antialias="true"/>
-    <font id="DateMed"  filename="DateMed.fnt"  antialias="true"/>
+    <font id="TimeBig" filename="TimeBig.fnt" antialias="true"/>
+    <font id="NumBig"  filename="NumBig.fnt"  antialias="true"/>
+    <font id="DateMed" filename="DateMed.fnt" antialias="true"/>
 </fonts>

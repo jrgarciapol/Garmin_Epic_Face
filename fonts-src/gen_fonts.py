@@ -17,10 +17,9 @@ TIME_CHARS = DIGITS + ":"
 DATE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + DIGITS + " "
 
 JOBS = [
-    ("TimeBold", "RobotoMono-Bold.ttf",   130, TIME_CHARS),   # hora interactiva
-    ("TimeAod",  "RobotoMono-Bold.ttf",   156, TIME_CHARS),   # hora AOD (grande, ~9%)
-    ("SecBold",  "RobotoMono-Bold.ttf",    56, DIGITS),       # segundos
-    ("DateMed",  "RobotoMono-Medium.ttf",  32, DATE_CHARS),   # fecha
+    ("TimeBig", "RobotoMono-Bold.ttf",   156, TIME_CHARS),   # hora (interactivo + AOD)
+    ("NumBig",  "RobotoMono-Bold.ttf",    56, DIGITS),       # número del día del mes
+    ("DateMed", "RobotoMono-Medium.ttf",  32, DATE_CHARS),   # iniciales de la tira semanal
 ]
 
 PAD = 2  # separación entre glifos en el atlas
