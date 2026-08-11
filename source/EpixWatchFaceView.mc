@@ -12,12 +12,10 @@ using Toybox.Application as App;
 //! Dos presentaciones:
 //!
 //!   INTERACTIVA (mirando el reloj):
-//!     - Día de la semana en 3 letras, arriba, en color de acento. Al despertar
-//!       la pantalla se "revela" letra a letra (L -> LU -> LUN), una por
-//!       segundo (límite de refresco de las esferas Garmin).
+//!     - Día de la semana en 3 letras, arriba, en verde.
 //!     - Hora H:MM / HH:MM enorme (Roboto Mono Bold 156), blanca. Sin cero
 //!       delante en horas de un solo dígito (p. ej. 1:00, no 01:00).
-//!     - Día del mes (número grande blanco) + mes en 3 letras (acento), abajo.
+//!     - Día del mes (número grande verde) + mes en 3 letras (acento azul), abajo.
 //!     - Sin segundos.
 //!
 //!   ALWAYS-ON (reposo, pantalla siempre encendida):
@@ -27,9 +25,6 @@ class EpixWatchFaceView extends Ui.WatchFace {
 
     // ¿Pantalla en alto consumo (el usuario la está mirando)?
     private var mIsAwake = true;
-
-    // Paso del revelado del día de la semana (1..3 letras). 3 = completo.
-    private var mRevealStep = 3;
 
     // Ajustes configurables por el usuario.
     private var mUse24Hour = true;
@@ -42,8 +37,9 @@ class EpixWatchFaceView extends Ui.WatchFace {
     private var mMonFont;    // Medium 70 — mes y día de la semana
 
     // Colores.
-    private const COLOR_BG   = Gfx.COLOR_BLACK;
-    private const COLOR_TIME = 0xFFFFFF; // blanco puro
+    private const COLOR_BG    = Gfx.COLOR_BLACK;
+    private const COLOR_TIME  = 0xFFFFFF; // blanco puro (hora)
+    private const COLOR_GREEN = 0x00FF00; // día de la semana y nº del día del mes
 
     // Posiciones verticales como fracción de la altura de pantalla.
     private const Y_WDAY = 0.200; // día de la semana (arriba, sobre la hora)
@@ -103,7 +99,7 @@ class EpixWatchFaceView extends Ui.WatchFace {
         var h = dc.getHeight();
         var cx = w / 2;
 
-        drawWeekday(dc, now.day_of_week, mRevealStep);
+        drawWeekday(dc, now.day_of_week);
 
         drawBigTime(dc, cx, (h * Y_TIME).toNumber(),
                     formatTime(now.hour, now.min), COLOR_TIME);
@@ -126,50 +122,14 @@ class EpixWatchFaceView extends Ui.WatchFace {
                     formatTime(now.hour, now.min), mAodColor);
     }
 
-    //! Refresco por segundo (solo alto consumo): avanza el revelado del día
-    //! de la semana (L -> LU -> LUN), redibujando solo esa franja.
-    function onPartialUpdate(dc) {
-        if (!mIsAwake || mRevealStep >= 3) {
-            return;
-        }
-        mRevealStep += 1;
-
-        var now = Calendar.info(Time.now(), Time.FORMAT_SHORT);
+    //! Día de la semana en 3 letras (verde), arriba, centrado.
+    private function drawWeekday(dc, dow) {
         var w = dc.getWidth();
         var h = dc.getHeight();
-        var full = dayName(now.day_of_week);
-        var fh = dc.getTextDimensions(full, mMonFont)[1];
-        var y = (h * Y_WDAY).toNumber();
 
-        // Limpia solo la franja del día de la semana antes de redibujar.
-        dc.setClip(0, y - fh / 2 - 2, w, fh + 4);
-        dc.setColor(COLOR_BG, COLOR_BG);
-        dc.clear();
-        drawWeekday(dc, now.day_of_week, mRevealStep);
-        dc.clearClip();
-    }
-
-    //! Día de la semana en 3 letras (color de acento), arriba. Se revela
-    //! letra a letra según `step` (1..3), creciendo hacia la derecha pero
-    //! quedando centrado como palabra completa.
-    private function drawWeekday(dc, dow, step) {
-        var w = dc.getWidth();
-        var h = dc.getHeight();
-        var cx = w / 2;
-
-        var full = dayName(dow);
-        var len = full.length();
-        var n = step;
-        if (n < 1) { n = 1; }
-        if (n > len) { n = len; }
-        var text = full.substring(0, n);
-
-        var fullW = dc.getTextDimensions(full, mMonFont)[0];
-        var x0 = cx - fullW / 2;
-
-        dc.setColor(mAccentColor, Gfx.COLOR_TRANSPARENT);
-        dc.drawText(x0, (h * Y_WDAY).toNumber(), mMonFont, text,
-                    Gfx.TEXT_JUSTIFY_LEFT | Gfx.TEXT_JUSTIFY_VCENTER);
+        dc.setColor(COLOR_GREEN, Gfx.COLOR_TRANSPARENT);
+        dc.drawText(w / 2, (h * Y_WDAY).toNumber(), mMonFont, dayName(dow),
+                    Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
     }
 
     //! Dibuja la hora muy grande en tres bloques (HH · : · MM) con el ":"
@@ -207,10 +167,12 @@ class EpixWatchFaceView extends Ui.WatchFace {
         var groupW = numW + gap + monW;
         var x0 = cx - groupW / 2;
 
-        dc.setColor(COLOR_TIME, Gfx.COLOR_TRANSPARENT);
+        // Número del día del mes en verde.
+        dc.setColor(COLOR_GREEN, Gfx.COLOR_TRANSPARENT);
         dc.drawText(x0, cy, mNumFont, num,
                     Gfx.TEXT_JUSTIFY_LEFT | Gfx.TEXT_JUSTIFY_VCENTER);
 
+        // Mes en azul de acento.
         dc.setColor(mAccentColor, Gfx.COLOR_TRANSPARENT);
         dc.drawText(x0 + numW + gap, cy, mMonFont, mon,
                     Gfx.TEXT_JUSTIFY_LEFT | Gfx.TEXT_JUSTIFY_VCENTER);
@@ -267,10 +229,9 @@ class EpixWatchFaceView extends Ui.WatchFace {
         return h.format("%d") + ":" + min.format("%02d");
     }
 
-    //! Alto consumo: reinicia el revelado del día y repinta al instante.
+    //! Alto consumo: repintamos al instante para respuesta inmediata al gesto.
     function onExitSleep() {
         mIsAwake = true;
-        mRevealStep = 1;
         Ui.requestUpdate();
     }
 
