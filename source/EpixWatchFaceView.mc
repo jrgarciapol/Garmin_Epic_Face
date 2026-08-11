@@ -17,18 +17,15 @@ using Toybox.Application as App;
 //!     - Hora HH:MM (Roboto Mono Bold, blanco, muy grande)
 //!     - Línea de acento + segundos (color de acento)
 //!
-//!   ALWAYS-ON (reposo, pantalla siempre encendida) — legible pero seguro:
-//!     - Hora HH:MM (Roboto Mono Light: trazo fino = pocos píxeles encendidos)
-//!     - Fecha pequeña
-//!     - Sin segundos ni rellenos; ~4% de píxeles encendidos (Garmin exige <10%)
+//!   ALWAYS-ON (reposo, pantalla siempre encendida) — solo la hora, grande:
+//!     - Hora HH:MM (Roboto Mono Bold 156) en color vivo (verde/rojo/blanco)
+//!     - Sin fecha, segundos ni rellenos
+//!     - ~9,2% de píxeles encendidos (Garmin exige <10%)
 //!     - Desplazamiento de píxeles cada minuto para evitar quemado del AMOLED.
 class EpixWatchFaceView extends Ui.WatchFace {
 
     // ¿Pantalla en alto consumo (el usuario la está mirando)?
     private var mIsAwake = true;
-
-    // ¿El dispositivo exige protección anti burn-in? (true en AMOLED Epix Pro)
-    private var mBurnIn = false;
 
     // Ajustes configurables por el usuario.
     private var mUse24Hour = true;
@@ -56,17 +53,12 @@ class EpixWatchFaceView extends Ui.WatchFace {
         WatchFace.initialize();
     }
 
-    //! Carga fuentes y detecta capacidades del dispositivo.
+    //! Carga las fuentes personalizadas.
     function onLayout(dc) {
         mTimeFont = Ui.loadResource(Rez.Fonts.TimeBold);
         mAodFont  = Ui.loadResource(Rez.Fonts.TimeAod);
         mSecFont  = Ui.loadResource(Rez.Fonts.SecBold);
         mDateFont = Ui.loadResource(Rez.Fonts.DateMed);
-
-        var settings = Sys.getDeviceSettings();
-        if (settings has :requiresBurnInProtection) {
-            mBurnIn = (settings.requiresBurnInProtection == true);
-        }
 
         loadSettings();
     }
@@ -229,31 +221,41 @@ class EpixWatchFaceView extends Ui.WatchFace {
         return h.format("%02d") + ":" + min.format("%02d");
     }
 
+    //! Nombre corto del día (day_of_week: 1 = domingo en FORMAT_SHORT).
     private function dayName(dow) {
-        var ids = [
-            Rez.Strings.Day_0, Rez.Strings.Day_1, Rez.Strings.Day_2,
-            Rez.Strings.Day_3, Rez.Strings.Day_4, Rez.Strings.Day_5,
-            Rez.Strings.Day_6
-        ];
-        var idx = dow - 1;
-        if (idx < 0 || idx > 6) {
-            idx = 0;
+        var id;
+        switch (dow) {
+            case 1:  id = Rez.Strings.Day_0; break;
+            case 2:  id = Rez.Strings.Day_1; break;
+            case 3:  id = Rez.Strings.Day_2; break;
+            case 4:  id = Rez.Strings.Day_3; break;
+            case 5:  id = Rez.Strings.Day_4; break;
+            case 6:  id = Rez.Strings.Day_5; break;
+            case 7:  id = Rez.Strings.Day_6; break;
+            default: id = Rez.Strings.Day_0; break;
         }
-        return Ui.loadResource(ids[idx]);
+        return Ui.loadResource(id);
     }
 
+    //! Nombre corto del mes (1 = enero).
     private function monthName(month) {
-        var ids = [
-            Rez.Strings.Mon_1, Rez.Strings.Mon_2, Rez.Strings.Mon_3,
-            Rez.Strings.Mon_4, Rez.Strings.Mon_5, Rez.Strings.Mon_6,
-            Rez.Strings.Mon_7, Rez.Strings.Mon_8, Rez.Strings.Mon_9,
-            Rez.Strings.Mon_10, Rez.Strings.Mon_11, Rez.Strings.Mon_12
-        ];
-        var idx = month - 1;
-        if (idx < 0 || idx > 11) {
-            idx = 0;
+        var id;
+        switch (month) {
+            case 1:  id = Rez.Strings.Mon_1;  break;
+            case 2:  id = Rez.Strings.Mon_2;  break;
+            case 3:  id = Rez.Strings.Mon_3;  break;
+            case 4:  id = Rez.Strings.Mon_4;  break;
+            case 5:  id = Rez.Strings.Mon_5;  break;
+            case 6:  id = Rez.Strings.Mon_6;  break;
+            case 7:  id = Rez.Strings.Mon_7;  break;
+            case 8:  id = Rez.Strings.Mon_8;  break;
+            case 9:  id = Rez.Strings.Mon_9;  break;
+            case 10: id = Rez.Strings.Mon_10; break;
+            case 11: id = Rez.Strings.Mon_11; break;
+            case 12: id = Rez.Strings.Mon_12; break;
+            default: id = Rez.Strings.Mon_1;  break;
         }
-        return Ui.loadResource(ids[idx]);
+        return Ui.loadResource(id);
     }
 
     //! Alto consumo: repintamos al instante para respuesta inmediata al gesto.
