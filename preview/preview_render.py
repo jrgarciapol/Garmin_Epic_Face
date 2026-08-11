@@ -20,7 +20,8 @@ RED = (255, 0, 0)            # 0xFF0000
 
 # fuentes (mismos tamaños que el código / BMFont)
 f_time = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 156)    # hora grande
-f_num = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 56)      # nº día del mes
+f_num = ImageFont.truetype(f"{SRC}/RobotoMono-Bold.ttf", 78)      # nº día del mes
+f_mon = ImageFont.truetype(f"{SRC}/RobotoMono-Medium.ttf", 54)    # mes (3 letras)
 f_init = ImageFont.truetype(f"{SRC}/RobotoMono-Medium.ttf", 32)   # iniciales
 
 Y_STRIP, Y_TIME, Y_DATE = 0.235, 0.50, 0.775
@@ -52,15 +53,20 @@ def draw_week_strip(d, cx, cy, today_idx):
             d.text((x, cy), ch, font=f_init, fill=DIM, anchor="mm")
 
 
-def draw_day_window(d, cx, cy, day):
+def draw_day_window(d, cx, cy, day, mon):
     num = str(day)
-    l, t, rr, b = d.textbbox((cx, cy), num, font=f_num, anchor="mm")
-    boxW = (rr - l) + 40
+    numW = f_num.getlength(num)
+    monW = f_mon.getlength(mon)
+    gap = 14
+    groupW = numW + gap + monW
+    x0 = cx - groupW / 2
+    padX = 22
+    _, t, _, b = d.textbbox((cx, cy), num, font=f_num, anchor="lm")
     boxH = (b - t) + 8
-    x0, y0 = cx - boxW // 2, cy - boxH // 2
-    d.rounded_rectangle([x0, y0, x0 + boxW, y0 + boxH], radius=12,
-                        outline=ACCENT, width=3)
-    d.text((cx, cy), num, font=f_num, fill=WHITE, anchor="mm")
+    d.rounded_rectangle([x0 - padX, cy - boxH / 2, x0 + groupW + padX, cy + boxH / 2],
+                        radius=14, outline=ACCENT, width=3)
+    d.text((x0, cy), num, font=f_num, fill=WHITE, anchor="lm")
+    d.text((x0 + numW + gap, cy), mon, font=f_mon, fill=ACCENT, anchor="lm")
 
 
 def face(mode, aod_color=None):
@@ -71,7 +77,7 @@ def face(mode, aod_color=None):
     if mode == "interactive":
         draw_week_strip(d, cx, int(S * Y_STRIP), 5)   # sábado resaltado
         draw_big_time(d, cx, int(S * Y_TIME), WHITE)
-        draw_day_window(d, cx, int(S * Y_DATE), 9)
+        draw_day_window(d, cx, int(S * Y_DATE), 9, "AGO")
     else:  # always-on: solo la hora, grande, con desplazamiento de ejemplo
         ox, oy = 8, -8
         draw_big_time(d, cx + ox, S // 2 + oy, aod_color)

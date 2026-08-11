@@ -14,11 +14,13 @@ FONT_DIR = os.path.join(BASE, "resources", "fonts")     # salida .fnt + .png
 # (id, archivo ttf, tamaño px, caracteres)
 DIGITS = "0123456789"
 TIME_CHARS = DIGITS + ":"
-DATE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + DIGITS + " "
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+DATE_CHARS = LETTERS + DIGITS + " "
 
 JOBS = [
     ("TimeBig", "RobotoMono-Bold.ttf",   156, TIME_CHARS),   # hora (interactivo + AOD)
-    ("NumBig",  "RobotoMono-Bold.ttf",    56, DIGITS),       # número del día del mes
+    ("NumBig",  "RobotoMono-Bold.ttf",    78, DIGITS),       # número del día del mes
+    ("MonBig",  "RobotoMono-Medium.ttf",  54, LETTERS),      # mes (3 letras) a su derecha
     ("DateMed", "RobotoMono-Medium.ttf",  32, DATE_CHARS),   # iniciales de la tira semanal
 ]
 

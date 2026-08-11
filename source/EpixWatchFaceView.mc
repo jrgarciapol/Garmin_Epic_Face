@@ -34,7 +34,8 @@ class EpixWatchFaceView extends Ui.WatchFace {
 
     // Fuentes personalizadas (Roboto Mono).
     private var mTimeFont;   // Bold 156 — hora (interactivo + AOD)
-    private var mNumFont;    // Bold 56  — número del día del mes
+    private var mNumFont;    // Bold 78  — número del día del mes
+    private var mMonFont;    // Medium 54 — mes (3 letras)
     private var mInitFont;   // Medium 32 — iniciales de la tira semanal
 
     // Colores.
@@ -55,6 +56,7 @@ class EpixWatchFaceView extends Ui.WatchFace {
     function onLayout(dc) {
         mTimeFont = Ui.loadResource(Rez.Fonts.TimeBig);
         mNumFont  = Ui.loadResource(Rez.Fonts.NumBig);
+        mMonFont  = Ui.loadResource(Rez.Fonts.MonBig);
         mInitFont = Ui.loadResource(Rez.Fonts.DateMed);
         loadSettings();
     }
@@ -105,7 +107,7 @@ class EpixWatchFaceView extends Ui.WatchFace {
         drawBigTime(dc, cx, (h * Y_TIME).toNumber(),
                     formatTime(now.hour, now.min), COLOR_TIME);
 
-        drawDayWindow(dc, cx, (h * Y_DATE).toNumber(), now.day);
+        drawDayWindow(dc, cx, (h * Y_DATE).toNumber(), now.day, now.month);
     }
 
     //! ---- Presentación ALWAYS-ON (solo la hora) ----
@@ -178,24 +180,58 @@ class EpixWatchFaceView extends Ui.WatchFace {
         }
     }
 
-    //! Ventana de fecha: número grande del día del mes dentro de un recuadro
-    //! redondeado con borde de acento. Grande = legible sin gafas.
-    private function drawDayWindow(dc, cx, cy, day) {
+    //! Ventana de fecha: número grande del día del mes (blanco) y, a su
+    //! derecha, el mes en 3 letras (color de acento), dentro de un recuadro
+    //! redondeado. Todo grande = legible sin gafas.
+    private function drawDayWindow(dc, cx, cy, day, month) {
         var num = day.format("%d");
-        var dims = dc.getTextDimensions(num, mNumFont);
-        var boxW = dims[0] + 40;
-        var boxH = dims[1] + 8;
-        var x = cx - boxW / 2;
-        var y = cy - boxH / 2;
+        var mon = monthName(month);
 
+        var numW = dc.getTextDimensions(num, mNumFont)[0];
+        var monW = dc.getTextDimensions(mon, mMonFont)[0];
+        var gap = 14;
+        var groupW = numW + gap + monW;
+        var x0 = cx - groupW / 2;
+
+        // Recuadro alrededor del conjunto.
+        var padX = 22;
+        var boxH = dc.getTextDimensions(num, mNumFont)[1] + 8;
         dc.setColor(mAccentColor, Gfx.COLOR_TRANSPARENT);
         dc.setPenWidth(3);
-        dc.drawRoundedRectangle(x, y, boxW, boxH, 12);
+        dc.drawRoundedRectangle(x0 - padX, cy - boxH / 2,
+                                groupW + padX * 2, boxH, 14);
         dc.setPenWidth(1);
 
+        // Número (blanco) alineado a la izquierda del grupo, centrado vertical.
         dc.setColor(COLOR_TIME, Gfx.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy, mNumFont, num,
-                    Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(x0, cy, mNumFont, num,
+                    Gfx.TEXT_JUSTIFY_LEFT | Gfx.TEXT_JUSTIFY_VCENTER);
+
+        // Mes (acento) a la derecha del número.
+        dc.setColor(mAccentColor, Gfx.COLOR_TRANSPARENT);
+        dc.drawText(x0 + numW + gap, cy, mMonFont, mon,
+                    Gfx.TEXT_JUSTIFY_LEFT | Gfx.TEXT_JUSTIFY_VCENTER);
+    }
+
+    //! Nombre corto del mes (1 = enero), desde recursos (ES/EN).
+    private function monthName(month) {
+        var id;
+        switch (month) {
+            case 1:  id = Rez.Strings.Mon_1;  break;
+            case 2:  id = Rez.Strings.Mon_2;  break;
+            case 3:  id = Rez.Strings.Mon_3;  break;
+            case 4:  id = Rez.Strings.Mon_4;  break;
+            case 5:  id = Rez.Strings.Mon_5;  break;
+            case 6:  id = Rez.Strings.Mon_6;  break;
+            case 7:  id = Rez.Strings.Mon_7;  break;
+            case 8:  id = Rez.Strings.Mon_8;  break;
+            case 9:  id = Rez.Strings.Mon_9;  break;
+            case 10: id = Rez.Strings.Mon_10; break;
+            case 11: id = Rez.Strings.Mon_11; break;
+            case 12: id = Rez.Strings.Mon_12; break;
+            default: id = Rez.Strings.Mon_1;  break;
+        }
+        return Ui.loadResource(id);
     }
 
     //! Formatea la hora respetando 12/24 h del usuario y del sistema.
